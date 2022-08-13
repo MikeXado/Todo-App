@@ -1,80 +1,42 @@
 import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import "./App.scss";
 import { Todos } from "./components/todos";
 import { Form } from "./components/form";
-import { Popup } from "./components/popup";
 import moment from "moment";
+import { removeCompleted } from "./redux/Todos/todo-actions";
+import store from "./redux/store";
+
+store.subscribe(() => {
+  localStorage.setItem("todoState", JSON.stringify(store.getState()));
+});
 
 function App() {
-  const [state, setState] = useState(() => {
-    const saved = localStorage.getItem("todos");
-    const initialValue = JSON.parse(saved);
-    return (
-      initialValue || [
-        {
-          text: "Drink Water",
-          isDone: false,
-          checkState: false,
-        },
-      ]
-    );
-  });
-
-  const [buttonPopup, setButtonPopup] = useState(false);
+  const todoData = useSelector((state) => state.todo.todos);
+  const dispatch = useDispatch();
   const today = moment().format("dddd , Do");
   const month = moment().format("MMMM");
+  const [status, setStatus] = useState("all");
+  const [filtred, setFiltred] = useState([]);
 
-  useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(state));
-  }, [state]);
-
-  const addTodo = (text, isDone, checkState) => {
-    const todo = [...state, { text, isDone, checkState }];
-    setState(todo);
-  };
-
-  const markTodo = (index) => {
-    const newTodos = [...state];
-    if (newTodos[index].isDone === false) {
-      newTodos[index].isDone = true;
-      newTodos[index].checkState = true;
-    } else {
-      newTodos[index].isDone = false;
-      newTodos[index].checkState = false;
-    }
-    setState(newTodos);
-  };
-
-  const removeTodo = (id) => {
-    setState((prevItems) => {
-      return prevItems.filter((item, index) => {
-        return index !== id;
-      });
-    });
-  };
-
-  const submitForm = (e) => {
-    e.preventDefault();
-    const input = document.querySelector(".todo-content__input");
-    const text = input.value;
-    let isDone = false;
-    let checkState = false;
-    console.log(e);
-    if (text !== "") {
-      addTodo(text, isDone, checkState);
-      setButtonPopup(false);
-    }
-    input.value = "";
-  };
-
-  const done = state.filter((obj) => {
-    return obj.isDone === false;
+  const itemsLeft = todoData.filter((item) => {
+    return item.isDone === false;
   });
-
-  const removeIsDone = (e) => {
-    e.preventDefault();
-    setState(done);
-  };
+  useEffect(() => {
+    const active = todoData.filter((item) => {
+      return item.isDone === false;
+    });
+    const completed = todoData.filter((item) => {
+      return item.isDone === true;
+    });
+    if (status === "active") {
+      setFiltred(active);
+    } else if (status === "completed") {
+      setFiltred(completed);
+    } else {
+      setFiltred(todoData);
+    }
+  }, [todoData, status]);
 
   return (
     <div className="App">
@@ -85,39 +47,63 @@ function App() {
               <div className="date-content__today-date">{today}</div>
               <div className="date-content__month">{month}</div>
             </div>
-            <div className="date-content__task-count">
-              <span className="tasks-count">{done.length}</span> Tasks
-            </div>
           </div>
-          <div className="todo-content__horizontal-line"></div>
-          <div className="todo-content__clear-completed" onClick={removeIsDone}>
-            completed clear
-          </div>
+          <Form />
           <div className="todo-content__list list-content">
-            {state.map((noteItem, index) => {
-              return (
-                <Todos
-                  key={index}
-                  id={index}
-                  isDone={noteItem.isDone}
-                  checkState={noteItem.checkState}
-                  todo={noteItem.text}
-                  markTodo={markTodo}
-                  removeTodo={removeTodo}
-                />
-              );
+            {filtred.map((noteItem, index) => {
+              return <Todos key={index} id={index} noteItem={noteItem} />;
             })}
-          </div>
-          <Popup trigger={buttonPopup} setState={setButtonPopup}>
-            <Form submitForm={submitForm} deleteDone={removeIsDone} />
-          </Popup>
-          <div
-            className="todo-content__button"
-            onClick={() => {
-              setButtonPopup(true);
-            }}
-          >
-            <span></span>
+            <div className="todo-content__buttons">
+              <div className="todo-content__task-count">
+                {itemsLeft.length} items left
+              </div>
+              <div className="todo-content__task-control">
+                <button
+                  className="all btn"
+                  value="all"
+                  onClick={(e) => {
+                    setStatus(e.target.value);
+                  }}
+                  style={{
+                    color: status === "all" ? "hsl(220, 98%, 61%)" : "",
+                  }}
+                >
+                  All
+                </button>
+                <button
+                  className="active btn"
+                  value="active"
+                  onClick={(e) => {
+                    setStatus(e.target.value);
+                  }}
+                  style={{
+                    color: status === "active" ? "hsl(220, 98%, 61%)" : "",
+                  }}
+                >
+                  Active
+                </button>
+                <button
+                  className="completed btn"
+                  value="completed"
+                  onClick={(e) => {
+                    setStatus(e.target.value);
+                  }}
+                  style={{
+                    color: status === "completed" ? "hsl(220, 98%, 61%)" : "",
+                  }}
+                >
+                  Completed
+                </button>
+              </div>
+              <button
+                onClick={() => {
+                  dispatch(removeCompleted());
+                }}
+                className="todo-content__clear-completed"
+              >
+                Clear Completed
+              </button>
+            </div>
           </div>
         </div>
       </div>

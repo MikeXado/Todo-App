@@ -1,31 +1,24 @@
 import "../App.scss";
+import { useSelector, useDispatch } from "react-redux";
+import { removeTodo, markDown } from "../redux/Todos/todo-actions";
 
-function Todos(props) {
+function Todos({ noteItem, id }) {
+  const dispatch = useDispatch();
+
   return (
     <div className="list-content__items">
-      <div className="list-content__item">
-        <div
-          className="list-content__todo"
-          onClick={() => {
-            props.removeTodo(props.id);
-          }}
-          style={{ textDecoration: props.isDone ? "line-through" : "none" }}
-        >
-          {props.todo}
-        </div>
-
+      <div className="todo">
         <div className="list-content__checkbox">
           <label className="checkbox path">
             <input
               type="checkbox"
               className="checkbox"
-              value={props.checkState}
-              checked={props.checkState}
+              checked={noteItem.checkboxState}
               onChange={(e) => {
-                e.target.checked = props.checkState;
+                e.target.checked = noteItem.checkboxState;
               }}
               onClick={() => {
-                props.markTodo(props.id);
+                dispatch(markDown(id));
               }}
             />
             <svg viewBox="0 0 21 21">
@@ -33,7 +26,22 @@ function Todos(props) {
             </svg>
           </label>
         </div>
+        <div
+          className="list-content__todo"
+          style={{
+            textDecoration: noteItem.isDone ? "line-through" : "none",
+            opacity: noteItem.isDone ? "0.5" : "",
+          }}
+        >
+          {noteItem.text}
+        </div>
       </div>
+      <button
+        onClick={() => dispatch(removeTodo(id))}
+        className="list-content__todo-remove"
+      >
+        <span></span>
+      </button>
     </div>
   );
 }
